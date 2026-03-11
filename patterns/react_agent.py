@@ -107,10 +107,10 @@ class ReactAgent(Agent) :
 
         self.context = user_query
 
-        self.messages.append({
+        self.messages = [{
             "role" : "user", 
             'content' : self.context
-        })
+        }]
 
         ai_response = self.llm_call(self.messages)
 
@@ -143,14 +143,17 @@ class ReactAgent(Agent) :
         
         # self.context += " \n\n ######## Thinking ########"
         self.context += f"######## Tool use ########## \n name : {parsed_response['action']['name']} " + "\n" +  json.dumps(parsed_response['action'],indent=2)
-        # self.context += f"####### Tool result ######## \n {tool_execution_response}"
+        self.context += f"####### Tool result ######## \n {tool_execution_response}"
 
-        # self.messages.append({
-        #     "role" : "user", 
-        #     'content' : self.context
-        # })
+        self.messages = [{
+            "role" : "user", 
+            'content' : self.context
+        }]
 
-        # ai_response = self.llm_call(self.messages)
+        ai_response = self.llm_call(self.messages)
+
+        print("second ai response ")
+        print(ai_response)
 
         # print("\n\n second response \n\n")
         # print(ai_response)
