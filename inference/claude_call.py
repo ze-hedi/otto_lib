@@ -7,9 +7,11 @@ import os
 
 
 class ClaudeCall : 
-    def __init__(self, model:str, sampling_params : AnthropicSamplingParams,logger:logging.Logger) : 
+    def __init__(self, model:str, sampling_params : AnthropicSamplingParams,logger:logging.Logger,name:str="claude_call") : 
+        
         self.model = model 
         self.logger = logger
+        self.name = name
 
         sampling_params_dict = sampling_params.model_dump() 
         
@@ -21,15 +23,28 @@ class ClaudeCall :
         anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 
         self.client = anthropic.Anthropic(api_key=anthropic_api_key)
+        self.logger.info("anthropic client created correctly")
+        self.logger.info(f"client name : {self.name}")
+        self.logger.info("\n\n")
+        
 
     def set_system_prompt(self,system_prompt:str) : 
         self.system = system_prompt
 
     def __call__(self,messages:List[Dict]) : 
 
-        print("in claude caude call !!!")
-        print("printing system prompt first part ")
-        print(self.system[:1000])
+        self.logger.info(f"start {self.name} call")
+        self.logger.info("parameters : ") 
+        self.logger.info(f"model : {self.model}")
+        self.logger.info("##########################################")
+        self.logger.info(f"max tokens : {self.max_tokens}")
+        # self.logger.info("##########################################")
+        # self.logger.info("system prompt : ")
+        # self.logger.info(self.system)
+        self.logger.info("##########################################")
+        self.logger.info("scratchpad : ")
+        self.logger.info(messages)
+        
 
         response = self.client.messages.create(
             model=self.model, 

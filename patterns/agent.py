@@ -12,34 +12,39 @@ import asyncio
 class Agent :
 
     def __init__(self) :
-
-        print("creating the Agent object !!!!!")
         pass  
 
-    async def connect_servers_spawned(self) : 
+    def get_system_prompt(self) : 
+        return self.llm_call.llm_call.system 
 
+    async def connect_servers_spawned(self) : 
         self.clients = {} 
         self.tools = {} 
-
         
         BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         env = os.environ.copy()
         env["PYTHONPATH"] = BASE_DIR 
         for server_file_path in self.server_file_paths : 
-            full_path = BASE_DIR + server_file_path 
-            print(f"path :  {full_path}")
-            client = Client(PythonStdioTransport(full_path,env=env))
-            await client.__aenter__()
-            server_name = client.initialize_result.serverInfo.name
-            self.clients[server_name] = client
+            try : 
+                full_path = BASE_DIR + server_file_path 
+                client = Client(PythonStdioTransport(full_path,env=env))
+                await client.__aenter__()
+                server_name = client.initialize_result.serverInfo.name
+                self.logger.info(f"connected successfuly to server : {server_name}")
+                self.logger.info(f"server file path : {full_path}")
+                self.clients[server_name] = client
 
-            print(server_name)
-            tools = await client.list_tools() 
-            for tool in tools : 
-                self.tools[tool.name] = (tool,server_name)
-
-        print("all done correctly")
-
+                tools = await client.list_tools() 
+                self.logger.info(f"available tools :")
+                for tool in tools : 
+                    self.logger.info(tool.name)
+                    self.tools[tool.name] = (tool,server_name)
+            except Exception as e : 
+                self.logger.error(f"failed to connect to server on file : {server_name}")
+                self.logger.error(e)
+            
+            self.logger.info("\n\n")
+            
 
     async def connect_servers_http(self) :
 
@@ -73,17 +78,19 @@ class Agent :
             self.connect_servers_http()
     
     def show_tools(self) :
-        print(f"from show tools : {type(self.tools)}")
         return self.tools 
 
 
     @classmethod
-    async def create(cls,logger:logging.Logger,llm_call:LLMCall,server_ids:Dict,spawned:bool=False) : 
+    async def create(cls,name:str,logger:logging.Logger,llm_call:LLMCall,server_ids:Dict,spawned:bool=False) : 
         print("creating the Agent object baby")
         self = cls()
       
+        self.name = name 
         self.logger = logger 
         self.llm_call = llm_call 
+
+        self.logger.info(f"agent name : {self.name}")
         if (self.llm_call is not None) : 
             print("from agent creator llm_call not null !! ")
         else : 
@@ -102,8 +109,7 @@ class Agent :
             else : 
                 raise ValueError("need to provide the key server_urls in server_ids because we are in http mode")
         await self.connect_servers()
-
-        print(f"show tools : \n {self.tools}")
+        
         return self 
 
 
