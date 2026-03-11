@@ -31,11 +31,12 @@ class Agent :
             client = Client(PythonStdioTransport(full_path,env=env))
             await client.__aenter__()
             server_name = client.initialize_result.serverInfo.name
+            self.clients[server_name] = client
 
             print(server_name)
             tools = await client.list_tools() 
             for tool in tools : 
-                print(f"name : {tool.name}")
+                self.tools[tool.name] = (tool,server_name)
 
         print("all done correctly")
 
@@ -91,18 +92,19 @@ class Agent :
 
         if spawned == True : 
             if "server_file_paths" in server_ids : 
-                print("found server file paths ....")
                 self.server_file_paths = server_ids['server_file_paths']
-                await self.connect_servers()
+            else : 
+                raise ValueError("need to provide the key server_file_paths in server_ids because we are in stdio mode")
+
         else : 
             if "server_urls" in server_ids : 
                 self.server_urls = server_ids['server_urls']
-                await self.connect_servers()
-                # print(f"printing available server urls : {server_ids['server_urls']}")
-                return self     
-        
             else : 
                 raise ValueError("need to provide the key server_urls in server_ids because we are in http mode")
+        await self.connect_servers()
+
+        print(f"show tools : \n {self.tools}")
+        return self 
 
 
 async def main() : 
