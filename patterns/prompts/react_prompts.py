@@ -21,11 +21,8 @@ At each iteration , your output format should be the following :
 - If you estimate that you still not have enough information to achieve the goal  : 
 
 <think>
-   Before every action, write out your reasoning explicitly inside <thought> tags. This includes:
-      - What you already know so far
-      - What information gaps remain
-      - What you need to search for next and why
-      - Your evolving outline or thesis as it takes shape
+   Before every action, write out your reasoning explicitly inside <think> tags. This includes:
+      
 </think>
 
 <action>
@@ -59,3 +56,9 @@ Remember :
  - never use another tag in your output response 
 
 """
+
+
+# - What you already know so far
+#       - What information gaps remain
+#       - What you need to search for next and why
+#       - Your evolving outline or thesis as it takes shape

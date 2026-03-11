@@ -11,25 +11,20 @@ from patterns.agent import Agent
 from patterns.prompts.react_prompts import react_prompt
 
 class ReactAgent(Agent) : 
+    
     def __init__(self) : 
         pass 
 
-    
     def set_system_prompt(self,role:str, tools:str) :
         self.system_prompt = react_prompt.format(role=role,tools=tools) 
         self.llm_call.set_system_prompt(self.system_prompt)
-        
-
-
-   
+           
     @classmethod 
-    async def create(cls,logger:logging.Logger,llm_call:LLMCall,server_ids:Dict,spawned:bool=False,agent_name:str="react_agent")  : 
+    async def create(cls,logger:logging.Logger,llm_call:LLMCall,server_ids:Dict,spawned:bool=False,agent_name:str="react_agent",max_iterations:int=10)  : 
         logger.info("creating the react agent ......")
         self = await super().create(agent_name,logger,llm_call,server_ids,spawned)
+        self.max_iterations = max_iterations
         return self 
-
-
-
 
     def parse_response(self,llm_response:str) :  
         result = {}
@@ -83,12 +78,10 @@ class ReactAgent(Agent) :
             for block in tool_execution_result.content : 
                 if block.type == "text" : 
                     response += block.text
-            print("printing response ")
-            print(tool_execution_result)
             return response  
 
         except Exception as e : 
-            self.logger.error("failed at executing the tool !!!")
+            self.logger.error("ERROR : failed at executing the tool !!!")
             self.logger.error(f"ERROR : {e}")
             return False 
 
@@ -109,10 +102,10 @@ class ReactAgent(Agent) :
 
         self.context = user_query
 
-        max_iteration = 3
         num_iteration = 0 
+        finished = False 
 
-        while num_iteration < max_iteration : 
+        while num_iteration < self.max_iterations and not finished : 
 
             self.logger.info(f'iteration num {num_iteration}')
             self.messages = [{
@@ -134,20 +127,23 @@ class ReactAgent(Agent) :
                 num_iteration += 1 
 
             else :  
-                server_name = self.tools[parsed_response['action']['name']][1]
-                print(f"***** printing server name : {server_name}")
-                
-                print("prinitng action dict ")
-                print(parsed_response["action"])
-                tool_execution_response = await self.execute_tool(self.tools[parsed_response['action']['name']],parsed_response["action"])
-                if isinstance(tool_execution_response,bool) : 
-                    pass 
+                if 'final' in parsed_response : 
+                    finished = True  
                 else : 
-                    self.context += f"######## Tool use ########## \n name : {parsed_response['action']['name']} " + "\n" +  json.dumps(parsed_response['action'],indent=2)
-                    self.context += f"####### Tool result ######## \n {tool_execution_response}"
+                    server_name = self.tools[parsed_response['action']['name']][1]
+                    print(f"***** printing server name : {server_name}")
+                
+                    print("prinitng action dict ")
+                    print(parsed_response["action"])
+                    tool_execution_response = await self.execute_tool(self.tools[parsed_response['action']['name']],parsed_response["action"])
+                    if isinstance(tool_execution_response,bool) : 
+                        pass 
+                    else : 
+                        self.context += f"######## Tool use ########## \n name : {parsed_response['action']['name']} " + "\n" +  json.dumps(parsed_response['action'],indent=2)
+                        self.context += f"####### Tool result ######## \n {tool_execution_response}"
         
-                num_iteration += 1 
-                self.logger.info("\n\n")
+                    num_iteration += 1 
+                    self.logger.info("\n\n")
 
 
 async def  main() : 

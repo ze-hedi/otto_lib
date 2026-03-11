@@ -61,17 +61,12 @@ class Agent :
                 tools = await client.list_tools() 
                 for tool in tools  : 
                     self.tools[tool.name] = (tool,server_name)
-                    print(f"name : {tool.name}")
-                print("printing tools : ") 
-                print(self.tools)
 
             except Exception as e: 
-                print(f"{server_url} deconne zebi")
                 self.logger.error(f"failed to connect to server : {server_url}")
 
     async def connect_servers(self) : 
         if self.spawned == True : 
-            print("spawned case ")
             await self.connect_servers_spawned()
         else : 
             print("http connection case ")
@@ -109,7 +104,7 @@ class Agent :
             else : 
                 raise ValueError("need to provide the key server_urls in server_ids because we are in http mode")
         await self.connect_servers()
-        
+
         return self 
 
 
