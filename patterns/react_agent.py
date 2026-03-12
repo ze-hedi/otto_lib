@@ -2,8 +2,6 @@ import json
 import logging 
 import asyncio 
 import re 
-from fastmcp import Client 
-from fastmcp.client.transports import PythonStdioTransport
 from typing import Dict, List 
 from inference.inference_utils import SamplingParams, AnthropicSamplingParams
 from inference.llm_call import LLMCall

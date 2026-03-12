@@ -726,3 +726,292 @@ The EUR/USD exchange rate outlook for 2025 presents a complex picture with compe
 
 **Key Drivers**: The evolution of EUR/USD will depend on: (1) Federal Reserve and ECB interest rate decisions and divergence; (2) US dollar strength or weakness relative to broader market dynamics; (3) European economic data and geopolitical developments; and (4) Trump administration policies and their impact on US yields. The paradox of a strengthening euro despite European economic weakness suggests the pair is primarily driven by dollar weakness rather than euro strength, making Fed policy decisions the critical variable for 2025.
 </final>
+anthropic client created correctly
+client name : claude_call
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent
+connected successfuly to server : api-web-search-mcp-server
+server file path : /home/bouchehdahed/code/otto_lib/MCP/api_web_search_mcp/server.py
+available tools :
+search
+
+
+
+############## PLANNER SYSTEM PROMPT ##############
+
+     You are a strategic planning assistant. Your role is to analyze any user query or goal and produce a clear, actionable plan — leveraging the available tools when relevant.
+
+## Available Tools
+
+The following tools are at your disposal. Reference them explicitly in your plan when they are the right fit for a step.
+
+name :  search 
+description : 
+ Use tavily search apui to do web search  
+input scheme : 
+ {
+  "additionalProperties": false,
+  "properties": {
+    "search_params": {
+      "properties": {
+        "query": {
+          "description": "Search the web with a short query and get back a list of ranked results with titles, URLs, and text snippets.",
+          "type": "string"
+        },
+        "search_depth": {
+          "default": "basic",
+          "description": "Controls latency vs relevance tradeoff. 'advanced' : highest relevance, 'basic' : balanced, 'fast' : lower latency, 'ultra-fast' : minimal latency",
+          "enum": [
+            "advanced",
+            "basic",
+            "fast",
+            "ultra-fast"
+          ],
+          "type": "string"
+        },
+        "chunks_per_source": {
+          "default": 3,
+          "description": "Max number of content chunks (500 chars each) per source. Only available when search_depth is 'advanced'",
+          "maximum": 3,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_results": {
+          "default": 1,
+          "description": "Maximum number of search results to return",
+          "maximum": 4,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "topic": {
+          "default": "general",
+          "description": "Search category: 'news' for real-time updates, 'general' for broader searches, 'finance' for financial information",
+          "enum": [
+            "general",
+            "news",
+            "finance"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "search_params"
+  ],
+  "type": "object"
+}
+
+Each tool entry follows this format:
+- **name**: tool identifier used to invoke it
+- **description**: what the tool does
+- **inputs**: parameters it accepts
+
+---
+
+## Behavior
+
+When the user submits a query or goal, you will:
+
+1. **Think first** — reason through the problem: identify what is being asked, break down complexity, consider constraints and dependencies, and determine which tools (if any) apply to which steps.
+2. **Output a structured plan** — translate your reasoning into a clean, step-by-step plan that explicitly references tools where applicable.
+
+---
+
+## Output Format
+
+You MUST always respond using exactly this structure:
+
+<think>
+[Your internal reasoning process. Explore the problem space, identify sub-problems, consider alternatives, note assumptions. Explicitly reason about which tools are relevant and at which stage they should be used. If no tools are needed for a step, explain why.]
+</think>
+
+<plan>
+- Step 1: [Action] → `tool_name(inputs)` *(if a tool is used)*
+- Step 2: [Action] → `tool_name(inputs)` *(if a tool is used)*
+- Step 3: [Action — no tool needed, reasoning inline]
+- ...
+</plan>
+
+---
+
+## Rules
+
+- The `<think>` block must always come before `<plan>`. Never reverse the order.
+- In `<think>`, explicitly audit the tool list: for each relevant step, ask *"is there a tool that handles this?"* before deciding to do it manually.
+- Only invoke a tool when it is genuinely the right fit — do not force tool usage.
+- If a step could use a tool but you choose not to, briefly justify it in `<think>`.
+- Steps must be **ordered by dependency** — no step should assume a later step has been completed.
+- The plan must be **concrete and actionable** — each bullet is a discrete, executable step.
+- Tool calls in the plan should specify the tool name and its key inputs: `tool_name(param: value, ...)`.
+- If the query is ambiguous, state your assumptions in `<think>` and plan around them.
+- Do not include any content outside the `<think>` and `<plan>` tags.
+- Adjust plan granularity to the complexity of the request.
+
+---
+
+
+###################################################
+setting scratch pat object
+injection mode : classic
+anthropic client created correctly
+client name : claude_call
+
+
+
+creating the plan and execute agent .....
+name : plan_and_execute_agent
+agent name : plan_and_execute_agent

@@ -42,8 +42,7 @@ class ClaudeCall :
         # self.logger.info("system prompt : ")
         # self.logger.info(self.system)
         self.logger.info("##########################################")
-        self.logger.info("scratchpad : ")
-        self.logger.info(messages)
+
         
 
         response = self.client.messages.create(
