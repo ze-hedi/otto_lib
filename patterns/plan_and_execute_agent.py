@@ -26,6 +26,10 @@ class Planner :
         self.logger.info(self.system_prompt)
         self.logger.info("###################################################")
         self.llm_call.set_system_prompt(self.system_prompt)
+
+    def __call__(self,messages:Dict) : 
+        planner_response = self.llm_call(messages)
+        return planner_response
     
 
 class PlanAndExecuteAgent(Agent) : 
@@ -60,7 +64,7 @@ class PlanAndExecuteAgent(Agent) :
             "content" : user_query
         }]
 
-        plan_response = self.llm_call(messages)
+        plan_response = self.planner(messages)
 
         print("plan : ")
         print(plan_response) 
