@@ -9,6 +9,7 @@ from inference.inference_utils import SamplingParams, AnthropicSamplingParams
 from inference.llm_call import LLMCall
 from patterns.agent import Agent 
 from patterns.prompts.react_prompts import react_prompt
+from memory.scratchpad import ScratchPad
 
 class ReactAgent(Agent) : 
     
@@ -24,6 +25,7 @@ class ReactAgent(Agent) :
         logger.info("creating the react agent ......")
         self = await super().create(agent_name,logger,llm_call,server_ids,spawned)
         self.max_iterations = max_iterations
+        self.scratchpad = ScratchPad(logger=self.logger)
         return self 
 
     def parse_response(self,llm_response:str) :  
