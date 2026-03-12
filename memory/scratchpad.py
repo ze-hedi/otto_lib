@@ -10,7 +10,7 @@ import logging
 class ScratchPad : 
     def __init__(self,logger:logging.Logger, injection_mode:str="classic",injection_config:Dict=None) : 
         self.steps = []
-        self.loggger = logger 
+        self.logger = logger 
         self.logger.info("setting scratch pat object")
         self.injection_mode = injection_mode
 
@@ -53,5 +53,28 @@ class ScratchPad :
 
     def add_step(self,step:Dict) :  
         self.steps.append(step) 
+
+    def build_context(self) : 
+        context = ""
+        if self.injection_mode == "classic" : 
+            for step in self.steps : 
+                for step_part in step : 
+                    if step_part["role"] == "think" : 
+                        context += f"########### Thinking ########### \n {step_part['content']}\n"
+                    elif step_part["role"] == "tool_call" : 
+                        context += f"########### Tool Call ########### \n {step_part['content']}\n"
+                    elif step_part["role"] == "tool_result" : 
+                        context += f"########### Tool Result ########### \n {step_part['content']}" 
+                    elif step_part["role"] == "user" : 
+                        context += f"########### User Query ########### \n {step_part['content']}" 
+
+                print("\n")
+
+        self.logger.info("\n\n ######### Context #########")
+        self.logger.info(context)
+        self.logger.info("########################################")
+        
+        return context 
+
 
         

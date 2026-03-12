@@ -26,6 +26,7 @@ class ReactAgent(Agent) :
         self = await super().create(agent_name,logger,llm_call,server_ids,spawned)
         self.max_iterations = max_iterations
         self.scratchpad = ScratchPad(logger=self.logger)
+        self.context = ""
         return self 
 
     def parse_response(self,llm_response:str) :  
@@ -64,6 +65,7 @@ class ReactAgent(Agent) :
             final_match = re.search(r"<final>(.*?)</final>", llm_response, re.DOTALL)
             if final_match:
                 result["final"] = final_match.group(1).strip()
+                print("\n\n\n")
             else:
                 self.logger.error("ERROR : can't find <action></action> nor <final></final> in the llm response")
                 return False 
@@ -102,12 +104,15 @@ class ReactAgent(Agent) :
         self.logger.info(self.get_system_prompt())
         self.logger.info("#################### \n")
 
-        self.context = user_query
+        self.scratchpad.add_step([{"role":"user","content":user_query}])
 
         num_iteration = 0 
         finished = False 
 
         while num_iteration < self.max_iterations and not finished : 
+
+            reasoning_step_hist = []
+            self.context = self.scratchpad.build_context()
 
             self.logger.info(f'iteration num {num_iteration}')
             self.messages = [{
@@ -129,20 +134,38 @@ class ReactAgent(Agent) :
                 num_iteration += 1 
 
             else :  
+
+                reasoning_step_hist.append({
+                            "role" : "think" , 
+                            "content" : parsed_response["think"]
+                })
+                
                 if 'final' in parsed_response : 
                     finished = True  
                 else : 
+                    
+                    reasoning_step_hist.append({
+                            "role" : "tool_call", 
+                            "content" : json.dumps(parsed_response["action"],indent=2)
+                    })
                     server_name = self.tools[parsed_response['action']['name']][1]
-                    print(f"***** printing server name : {server_name}")
+                    # print(f"***** printing server name : {server_name}")
                 
-                    print("prinitng action dict ")
-                    print(parsed_response["action"])
+                    # print("prinitng action dict ")
+                    # print(parsed_response["action"])
                     tool_execution_response = await self.execute_tool(self.tools[parsed_response['action']['name']],parsed_response["action"])
                     if isinstance(tool_execution_response,bool) : 
                         pass 
                     else : 
-                        self.context += f"######## Tool use ########## \n name : {parsed_response['action']['name']} " + "\n" +  json.dumps(parsed_response['action'],indent=2)
-                        self.context += f"####### Tool result ######## \n {tool_execution_response}"
+
+                        reasoning_step_hist.append({
+                            "role" : "tool_result" , 
+                            "content" : tool_execution_response
+                        })
+
+                        self.scratchpad.add_step(reasoning_step_hist)
+                        # self.context += f"######## Tool use ########## \n name : {parsed_response['action']['name']} " + "\n" +  json.dumps(parsed_response['action'],indent=2)
+                        # self.context += f"####### Tool result ######## \n {tool_execution_response}"
         
                     num_iteration += 1 
                     self.logger.info("\n\n")

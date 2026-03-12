@@ -69,7 +69,6 @@ class Agent :
         if self.spawned == True : 
             await self.connect_servers_spawned()
         else : 
-            print("http connection case ")
             self.connect_servers_http()
     
     def show_tools(self) :
@@ -78,7 +77,6 @@ class Agent :
 
     @classmethod
     async def create(cls,name:str,logger:logging.Logger,llm_call:LLMCall,server_ids:Dict,spawned:bool=False) : 
-        print("creating the Agent object baby")
         self = cls()
       
         self.name = name 
@@ -86,10 +84,7 @@ class Agent :
         self.llm_call = llm_call 
 
         self.logger.info(f"agent name : {self.name}")
-        if (self.llm_call is not None) : 
-            print("from agent creator llm_call not null !! ")
-        else : 
-            print("from agent creator llm_call is null !!")
+        
         self.spawned = spawned
 
         if spawned == True : 
