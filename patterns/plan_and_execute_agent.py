@@ -6,7 +6,7 @@ from typing import Dict, List
 from inference.inference_utils import SamplingParams, AnthropicSamplingParams
 from inference.llm_call import LLMCall
 from patterns.agent import Agent 
-from patterns.prompts.plan_and_execute_prompts import planner_prompt
+from patterns.prompts.plan_and_execute_prompts import planner_prompt, tool_call_prompt
 from memory.scratchpad import ScratchPad
 
 
@@ -18,7 +18,6 @@ class Planner :
             self.system_prompt = system_prompt
         else : 
             self.system_prompt = planner_prompt 
-        print("Planner built correctly !!")
 
     def set_tools_on_system_prompt(self,tools:str) : 
         self.system_prompt = self.system_prompt.format(TOOLS=tools)
@@ -57,7 +56,81 @@ class Planner :
     def __call__(self,messages:Dict) : 
         planner_response = self.llm_call(messages)
         return planner_response
+
+class ToolExecutor(Agent) : 
+    def __init__(self,llm_call:LLMCall, logger:logging.Logger, system_prompt:str=None) : 
+        self.llm_call = llm_call 
+        self.logger = logger 
+
+        if system_prompt is not None : 
+            self.system_prompt = system_prompt 
+        else : 
+            self.system_prompt = tool_call_prompt
+
+
+    def set_tools_on_system_prompt(self,tools:str) : 
+        self.system_prompt = tool_call_prompt.format(TOOLS=tools)
+        self.logger.info("############## PLANNER SYSTEM PROMPT ##############")
+        self.logger.info(self.system_prompt)
+        self.logger.info("###################################################")
+        self.llm_call.set_system_prompt(self.system_prompt)
+
+    def parse_response(self,llm_response:str) : 
+        
+        result = {}
+        think_match = re.search(r"<think>(.*?)</think>", llm_response, re.DOTALL)
+        if not think_match:
+            self.logger.error("ERROR : can't find the <think></think> block in the generated response")
+            return False 
     
+        result["think"] = think_match.group(1).strip()
+
+        action_match = re.search(r"<action>(.*?)</action>", llm_response, re.DOTALL)
+        if action_match:
+            action_content = action_match.group(1).strip()
+            name_match = re.search(r"<name>(.*?)</name>", action_content, re.DOTALL)
+            if name_match:
+                result["action"] = {"name" :name_match.group(1).strip() }
+            else : 
+                self.logger.error("ERROR : failed to find <name></name>")
+                return False 
+
+            input_match = re.search(r"<input>(.*?)</input>", action_content, re.DOTALL)
+            if input_match:
+                raw_input = input_match.group(1).strip()
+                try:
+                    parsed = json.loads(raw_input)
+                    result["action"]["arguments"] = parsed
+                except json.JSONDecodeError as e:
+                    self.logger.error("ERROR : <input></input> does'nt contain a json object")
+                    return False 
+            else : 
+                self.logger.error("ERROR : failed to find <input></input> block")
+                return False 
+        return result 
+
+    def __call__(self, context : str) : 
+        
+        messages = [{
+            "role" : "user" , 
+            "content" : context
+        }]
+
+        tool_call = self.llm_call(messages)
+
+        print("tool llm response ") 
+        print(tool_call)
+        
+
+        parsed_response = self.parse_response(tool_call)
+
+        print("toll call response : ") 
+        print(json.dumps(parsed_response,indent=4))
+
+
+
+
+
 
 class PlanAndExecuteAgent(Agent) : 
     
@@ -65,24 +138,34 @@ class PlanAndExecuteAgent(Agent) :
         pass 
 
     @classmethod 
-    async def create(cls,logger:logging.Logger,llm_call,server_ids:Dict, spawned:bool=False, 
+    async def create(cls,logger:logging.Logger,planner_llm_call:LLMCall,tool_executor_llm_call:LLMCall,server_ids:Dict, spawned:bool=False, 
                     agent_name:str="plan_and_execute_agent", planner_system_prompt:str=None) : 
 
         logger.info("creating the plan and execute agent .....")
         logger.info(f"name : {agent_name}")
-        self = await super().create(agent_name,logger,llm_call,server_ids,spawned)
+        self = await super().create(agent_name,logger,planner_llm_call,server_ids,spawned)
         
-        self.planner = Planner(llm_call,logger,planner_system_prompt)
+        self.planner = Planner(planner_llm_call,logger,planner_system_prompt)
+        self.tool_executor = ToolExecutor(tool_executor_llm_call,logger) 
 
         tools_str = ""
         for tool_name in self.tools.keys() :
             tools_str += f"name :  {tool_name} \n" + f"description : \n {self.tools[tool_name][0].description} \n" + f"input scheme : \n {json.dumps(self.tools[tool_name][0].inputSchema, indent=2)}"
 
         self.planner.set_tools_on_system_prompt(tools_str)
+        self.tool_executor.set_tools_on_system_prompt(tools_str)
 
         self.scratchpad = ScratchPad(logger=self.logger)
         
         return self
+
+    
+    def build_plan(self,parsed_response) : 
+        result = ""
+        for i in range(len(parsed_response['plan'])) :
+            step_num = i + 1 
+            result += f"{step_num}- {parsed_response['plan'][i]}\n"
+        return result 
 
     async def __call__(self,user_query) : 
 
@@ -96,7 +179,29 @@ class PlanAndExecuteAgent(Agent) :
         if isinstance(parsed_response,bool) : 
             print("failed to parse planner response ")
         else : 
-            print(json.dumps(parsed_response,indent=5))
+            print("################## THINK #######################")
+            print(parsed_response["think"])
+            print("################################################")
+            print("################## PLAN #######################")
+
+            
+            plan_str = self.build_plan(parsed_response)
+            for i in range(len(parsed_response["plan"])) : 
+                if i == 0 : 
+                    context = f"""
+Plan : 
+{plan_str}
+
+step to execute : 
+{parsed_response["plan"][i]}
+"""
+
+                    tool_call = self.tool_executor(context)
+
+                    
+                break                    # print(f"step{i} : ")
+                # print(parsed_response["plan"][i]) 
+
 
 
 
@@ -113,7 +218,9 @@ async def main() :
     sampling_params = AnthropicSamplingParams()
     claude_call = LLMCall("claude-haiku-4-5-20251001",sampling_params,logger) 
 
-    plan_and_execute_agent = await PlanAndExecuteAgent.create(logger,claude_call,server_file_paths,True) 
+    tool_executor_claude_call = LLMCall("claude-haiku-4-5-20251001",sampling_params,logger) 
+
+    plan_and_execute_agent = await PlanAndExecuteAgent.create(logger,claude_call,tool_executor_claude_call,server_file_paths,True) 
 
     usery_query = "we are in the beginning of march 2026, there's a war between usa and Israel vs Iran. It has an impact on the oil prices. Your goal is to estimate how the gaz and oil prices will evolve for the next 3 months"
 

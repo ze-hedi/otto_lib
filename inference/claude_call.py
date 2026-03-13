@@ -42,6 +42,7 @@ class ClaudeCall :
         # self.logger.info("system prompt : ")
         # self.logger.info(self.system)
         self.logger.info("##########################################")
+        print("claude call !!!!")
 
         
 
