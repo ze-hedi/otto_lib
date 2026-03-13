@@ -27,6 +27,33 @@ class Planner :
         self.logger.info("###################################################")
         self.llm_call.set_system_prompt(self.system_prompt)
 
+    def parse_response(self,llm_response) : 
+        result = {} 
+        think_match = re.search(r"<think>(.*?)</think>", llm_response, re.DOTALL)
+        if not think_match:
+            self.logger.error("ERROR : can't find the <think></think> block in the generated response")
+            return False 
+
+        result["think"] = think_match.group(1).strip()
+
+        plan_match = re.search(r"<plan>(.*?)</plan>", llm_response, re.DOTALL)
+        
+        if plan_match : 
+            plan = plan_match.group(1).strip()
+            remainder = re.sub(r"<step>.*?</step>", "", plan, flags=re.DOTALL)
+            if remainder.strip() : 
+                self.logger.error("ERROR : Bad plan output format")
+
+            result["plan"] = re.findall(r"<step>(.*?)</step>", plan, flags=re.DOTALL)
+            return result 
+            
+        else : 
+            self.logger.error("ERROR: Bad plan output format")
+            return False 
+
+
+
+
     def __call__(self,messages:Dict) : 
         planner_response = self.llm_call(messages)
         return planner_response
@@ -65,9 +92,12 @@ class PlanAndExecuteAgent(Agent) :
         }]
 
         plan_response = self.planner(messages)
+        parsed_response = self.planner.parse_response(plan_response)
+        if isinstance(parsed_response,bool) : 
+            print("failed to parse planner response ")
+        else : 
+            print(json.dumps(parsed_response,indent=5))
 
-        print("plan : ")
-        print(plan_response) 
 
 
 
