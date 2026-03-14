@@ -8,10 +8,11 @@ from inference.llm_call import LLMCall
 from patterns.agent import Agent 
 from patterns.prompts.plan_and_execute_prompts import planner_prompt, tool_call_prompt
 from memory.scratchpad import ScratchPad
+from memory.plan_and_execute_scratchpad import PlanAndExecuteScratchPad
 
 
 class Planner :
-    def __init__(self,llm_call:LLMCall,logger:logging.Logger,system_prompt:str=None) : 
+    def __init__(self,llm_call:LLMCall,logger:logging.Logger, system_prompt:str=None) : 
         self.llm_call = llm_call
         self.logger = logger 
         if system_prompt is not None : 
@@ -57,7 +58,7 @@ class Planner :
         planner_response = self.llm_call(messages)
         return planner_response
 
-class ToolExecutor(Agent) : 
+class ToolExecutor : 
     def __init__(self,llm_call:LLMCall, logger:logging.Logger, system_prompt:str=None) : 
         self.llm_call = llm_call 
         self.logger = logger 
@@ -109,7 +110,7 @@ class ToolExecutor(Agent) :
                 return False 
         return result 
 
-    def __call__(self, context : str) : 
+    async def __call__(self, context : str) : 
         
         messages = [{
             "role" : "user" , 
@@ -118,15 +119,23 @@ class ToolExecutor(Agent) :
 
         tool_call = self.llm_call(messages)
 
-        print("tool llm response ") 
-        print(tool_call)
+        # print("tool llm response ") 
+        # print(tool_call)
         
 
         parsed_response = self.parse_response(tool_call)
+        
+        # print("toll call response : ") 
+        # print(json.dumps(parsed_response,indent=4))
 
-        print("toll call response : ") 
-        print(json.dumps(parsed_response,indent=4))
+        
+        return parsed_response
+        # print("tool execution response ") 
+        # print(tool_execution_response)
 
+
+
+        
 
 
 
@@ -155,7 +164,7 @@ class PlanAndExecuteAgent(Agent) :
         self.planner.set_tools_on_system_prompt(tools_str)
         self.tool_executor.set_tools_on_system_prompt(tools_str)
 
-        self.scratchpad = ScratchPad(logger=self.logger)
+        self.scratchpad = PlanAndExecuteScratchPad(logger=self.logger)
         
         return self
 
@@ -175,6 +184,8 @@ class PlanAndExecuteAgent(Agent) :
         }]
 
         plan_response = self.planner(messages)
+
+        self.scratchpad.add("plan",plan_response)
         parsed_response = self.planner.parse_response(plan_response)
         if isinstance(parsed_response,bool) : 
             print("failed to parse planner response ")
@@ -187,16 +198,28 @@ class PlanAndExecuteAgent(Agent) :
             
             plan_str = self.build_plan(parsed_response)
             for i in range(len(parsed_response["plan"])) : 
-                if i == 0 : 
-                    context = f"""
-Plan : 
-{plan_str}
 
-step to execute : 
-{parsed_response["plan"][i]}
-"""
+                print(f"iteration num : {i}")
+                
+                self.scratchpad.add("step to execute",parsed_response["plan"][i])
+                print("printing the scratchpad content so far")
+                context = self.scratchpad.build() 
 
-                    tool_call = self.tool_executor(context)
+                tool_2_call = await self.tool_executor(context)
+                print("print tool to call") 
+                print(tool_2_call['action'])
+                tool_execution_response = await self.execute_tool(self.tools[tool_2_call['action']['name']],tool_2_call["action"])
+                    
+
+                self.scratchpad.add("exectuted step",f"{parsed_response['plan']}",True) 
+                self.scratchpad.add("tool to call",f"{json.dumps(tool_2_call,indent=2)}")
+                self.scratchpad.add("tool response",f"{tool_execution_response}")
+
+                print("\n\n\n")
+                self.scratchpad.build()
+
+                    # print("tool call ")
+                    # print(tool_execution_response)
 
                     
                 break                    # print(f"step{i} : ")

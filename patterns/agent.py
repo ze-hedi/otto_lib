@@ -74,6 +74,24 @@ class Agent :
     def show_tools(self) :
         return self.tools 
 
+    async def execute_tool(self,tool_tuple,action_dict) :
+
+        response = ""
+        self.logger.info(f"executing {action_dict['name']} on server : {tool_tuple[1]}")
+        list_available_clients = list(self.clients.keys())
+        try : 
+            tool_execution_result = await self.clients[tool_tuple[1]].call_tool(**action_dict)
+            for block in tool_execution_result.content : 
+                if block.type == "text" : 
+                    response += block.text
+            return response  
+
+        except Exception as e : 
+            self.logger.error("ERROR : failed at executing the tool !!!")
+            self.logger.error(f"ERROR : {e}")
+            return False 
+
+
 
     @classmethod
     async def create(cls,name:str,logger:logging.Logger,llm_call:LLMCall,server_ids:Dict,spawned:bool=False) : 
