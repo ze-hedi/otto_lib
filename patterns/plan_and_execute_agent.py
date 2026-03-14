@@ -211,18 +211,17 @@ class PlanAndExecuteAgent(Agent) :
                 tool_execution_response = await self.execute_tool(self.tools[tool_2_call['action']['name']],tool_2_call["action"])
                     
 
-                self.scratchpad.add("exectuted step",f"{parsed_response['plan']}",True) 
+                self.scratchpad.add("exectuted step",f"{parsed_response['plan'][i]}",True) 
                 self.scratchpad.add("tool to call",f"{json.dumps(tool_2_call,indent=2)}")
                 self.scratchpad.add("tool response",f"{tool_execution_response}")
 
                 print("\n\n\n")
-                self.scratchpad.build()
 
                     # print("tool call ")
                     # print(tool_execution_response)
 
                     
-                break                    # print(f"step{i} : ")
+                                    # print(f"step{i} : ")
                 # print(parsed_response["plan"][i]) 
 
 

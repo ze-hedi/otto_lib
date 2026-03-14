@@ -22,6 +22,9 @@ class PlanAndExecuteScratchPad(ScratchPad) :
         for added_message in self.context :
             result += f"{added_message['type']} : \n{added_message['context']} \n"
 
+        self.logger.info(f"############ CONTEXT ############")
+        self.logger.info(result)
+        self.logger.info("#################################")
         print(result) 
 
         return result  
