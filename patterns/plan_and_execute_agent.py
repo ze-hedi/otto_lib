@@ -6,7 +6,7 @@ from typing import Dict, List
 from inference.inference_utils import SamplingParams, AnthropicSamplingParams
 from inference.llm_call import LLMCall
 from patterns.agent import Agent 
-from patterns.prompts.plan_and_execute_prompts import planner_prompt, tool_call_prompt
+from patterns.prompts.plan_and_execute_prompts import planner_prompt, tool_call_prompt,tool_call_prompt_json
 from memory.scratchpad import ScratchPad
 from memory.plan_and_execute_scratchpad import PlanAndExecuteScratchPad
 
@@ -58,25 +58,43 @@ class Planner :
         return planner_response
 
 class ToolExecutor : 
-    def __init__(self,llm_call:LLMCall, logger:logging.Logger, system_prompt:str=None) : 
+    def __init__(self,llm_call:LLMCall, logger:logging.Logger, system_prompt:str=None, output_format:str="xml") : 
         self.llm_call = llm_call 
         self.logger = logger 
+        self.output_format = output_format
+
+        print("building ToolExecutor !!!!")
 
         if system_prompt is not None : 
             self.system_prompt = system_prompt 
         else : 
-            self.system_prompt = tool_call_prompt
+            if output_format == "json" : 
+                self.logger.info("setting the json mode for tool executor as output!!!!")
+                self.system_prompt = tool_call_prompt_json 
+            else : 
+                
+                self.system_prompt = tool_call_prompt
 
 
     def set_tools_on_system_prompt(self,tools:str) : 
-        self.system_prompt = tool_call_prompt.format(TOOLS=tools)
-        self.logger.info("############## PLANNER SYSTEM PROMPT ##############")
+        print("in the set tool of tool executor")
+        self.logger.info("########### tool exec #####") 
+        self.logger.info(self.system_prompt)
+        self.system_prompt = self.system_prompt.format(TOOLS=tools)
+        self.logger.info("############## TOOL EXECUTOR SYSTEM PROMPT ##############")
         self.logger.info(self.system_prompt)
         self.logger.info("###################################################")
         self.llm_call.set_system_prompt(self.system_prompt)
 
-    def parse_response(self,llm_response:str) : 
-        
+    def parse_json_response(self,llm_response:str) : 
+        try : 
+            json_result = json.loads(llm_response)
+            return json_result 
+        except json.JSONDecodeError: 
+            self.logger.error(f"failed to parse the tool executor response ")
+            return False 
+
+    def parse_xml_response(self,llm_response) :
         result = {}
         think_match = re.search(r"<think>(.*?)</think>", llm_response, re.DOTALL)
         if not think_match:
@@ -121,7 +139,18 @@ class ToolExecutor :
                 
                 return False 
         return result 
+ 
 
+    def parse_response(self,llm_response:str) : 
+
+        if self.output_format == "json" : 
+            print("!!!!!! json output format ")
+            print(self.output_format)
+            return self.parse_json_response(llm_response) 
+        else : 
+            return self.parse_xml_response(llm_response)
+        
+        
     def __call__(self, context : str) : 
         
         messages = [{
@@ -223,7 +252,7 @@ class PlanAndExecuteAgent(Agent) :
             plan_str = self.build_plan(parsed_response)
             for i in range(len(parsed_response["plan"])) : 
 
-                print(f"iteration num : {i}")
+                # print(f"iteration num : {i}")
                 
                 self.scratchpad.add("step to execute",parsed_response["plan"][i])
                 print("printing the scratchpad content so far")
@@ -233,8 +262,8 @@ class PlanAndExecuteAgent(Agent) :
 
                 if 'action' in tool_2_call : 
 
-                    print("print tool to call") 
-                    print(tool_2_call['action'])
+                    # print("print tool to call") 
+                    # print(tool_2_call['action'])
                     tool_execution_response = await self.execute_tool(self.tools[tool_2_call['action']['name']],tool_2_call["action"])
                     
 
