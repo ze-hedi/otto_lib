@@ -50,11 +50,7 @@ async def search(search_params:TavilySearchInput)  :
     for i,result in enumerate(tavily_result["results"]) :
         web_search_result += "title : {title} \n".format(title=result["title"]) + "URL : {url} \n".format(url=result["title"]) + "content : \n {content} \n\n".format(content=result["content"])
 
-
-    print("web search result ")
-    print(web_search_result) 
-
-    return [web_search_result] 
+    return web_search_result
 
 
 async def show_tools() : 

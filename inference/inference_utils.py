@@ -7,7 +7,7 @@ class SamplingParams(BaseModel) :
 class AnthropicSamplingParams(SamplingParams) : 
     max_tokens :int = 1024
 
-    system_prompt:str = None
+    system_prompt:str = ""
 
 class OpenAISamplingParams(SamplingParams) : 
     
