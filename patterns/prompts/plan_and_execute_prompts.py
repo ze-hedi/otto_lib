@@ -98,8 +98,10 @@ You will receive:
 
 ## Output fromat : 
 
+- If you estimate there's a need for a tool call, your output format should be as follows
+
 <think>
-   Before every action, write out your reasoning explicitly inside <think> tags. This includes:
+   Before every action, write out your reasoning explicitly inside <think> tags.
       
 </think>
 
@@ -114,4 +116,19 @@ You will receive:
    </input>
 </action>
 
+
+- If you're at the final step of the plan (which is in most cases about synthetizing and providing the final response), you should use the following output format :
+
+<think>
+    Your reasoning process 
+</think>
+
+<final>
+ a paragraph or two to respond to the user query or the step your dealing with. take into account the provided context.
+</final>
+
+
+Remeber : 
+-Make sure you only respond in the two provided format. 
+-Make sure always to never forget the tags !!!!
 """

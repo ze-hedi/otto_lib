@@ -19,7 +19,6 @@ class Planner :
             self.system_prompt = system_prompt
         else : 
             self.system_prompt = planner_prompt 
-
     def set_tools_on_system_prompt(self,tools:str) : 
         self.system_prompt = self.system_prompt.format(TOOLS=tools)
         self.logger.info("############## PLANNER SYSTEM PROMPT ##############")
@@ -108,9 +107,22 @@ class ToolExecutor :
             else : 
                 self.logger.error("ERROR : failed to find <input></input> block")
                 return False 
+
+        else:
+            final_match = re.search(r"<final>(.*?)</final>", llm_response, re.DOTALL)
+            if final_match:
+                result["final"] = final_match.group(1).strip()
+                print("\n\n\n")
+            else:
+                self.logger.error("ERROR : can't find <action></action> nor <final></final> in the llm response")
+                self.logger.error("############# PRINTING THE TOOL EXECUTOR RESPONSE #############" ) 
+                self.logger.error(llm_response)
+                self.logger.error("####################################################################")
+                
+                return False 
         return result 
 
-    async def __call__(self, context : str) : 
+    def __call__(self, context : str) : 
         
         messages = [{
             "role" : "user" , 
@@ -118,12 +130,18 @@ class ToolExecutor :
         }]
 
         tool_call = self.llm_call(messages)
-
-        # print("tool llm response ") 
-        # print(tool_call)
-        
-
         parsed_response = self.parse_response(tool_call)
+        max_retries=3
+        retry=1
+        while isinstance(parsed_response,bool) and retry <=  max_retries : 
+            self.logger.warning(f"WARNING : retrying tool executor call for {retry} time")
+            self.logger.warning("################### PARSED RESPONSE ###################")
+            self.logger.warning(tool_call)
+            self.logger.warning("#######################################################")
+            self.logger.warning("\n")
+            tool_call = self.llm_call(messages)
+            parsed_response = self.parse_response(tool_call)
+            retry += 1 
         
         # print("toll call response : ") 
         # print(json.dumps(parsed_response,indent=4))
@@ -184,9 +202,15 @@ class PlanAndExecuteAgent(Agent) :
         }]
 
         plan_response = self.planner(messages)
-
-        self.scratchpad.add("plan",plan_response)
         parsed_response = self.planner.parse_response(plan_response)
+        
+        num_retries = 3
+        retry = 0
+        while isinstance(parsed_response,bool) and retry<=3 : 
+            plan_response = self.planner(messages)
+            parsed_response = self.planner.parse_response(plan_response)
+            
+        self.scratchpad.add("plan",plan_response)
         if isinstance(parsed_response,bool) : 
             print("failed to parse planner response ")
         else : 
@@ -205,16 +229,23 @@ class PlanAndExecuteAgent(Agent) :
                 print("printing the scratchpad content so far")
                 context = self.scratchpad.build() 
 
-                tool_2_call = await self.tool_executor(context)
-                print("print tool to call") 
-                print(tool_2_call['action'])
-                tool_execution_response = await self.execute_tool(self.tools[tool_2_call['action']['name']],tool_2_call["action"])
+                tool_2_call = self.tool_executor(context)
+
+                if 'action' in tool_2_call : 
+
+                    print("print tool to call") 
+                    print(tool_2_call['action'])
+                    tool_execution_response = await self.execute_tool(self.tools[tool_2_call['action']['name']],tool_2_call["action"])
                     
 
-                self.scratchpad.add("exectuted step",f"{parsed_response['plan'][i]}",True) 
-                self.scratchpad.add("tool to call",f"{json.dumps(tool_2_call,indent=2)}")
-                self.scratchpad.add("tool response",f"{tool_execution_response}")
+                    self.scratchpad.add("exectuted step",f"{parsed_response['plan'][i]}",True) 
+                    self.scratchpad.add("tool to call",f"{json.dumps(tool_2_call,indent=2)}")
+                    self.scratchpad.add("tool response",f"{tool_execution_response}")
 
+                
+                elif 'final' in tool_2_call : 
+                    self.scratchpad.add("exectuted step",f"{parsed_response['plan'][i]}",True) 
+                    self.scratchpad("response",f"{tool_2_call['final']}")
                 print("\n\n\n")
 
                     # print("tool call ")
